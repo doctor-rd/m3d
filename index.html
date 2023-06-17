@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <title>m3d</title>
+  </head>
+  <body>
+    <canvas id="glcanvas" width="600" height="600"></canvas>
+    <script>
+      const gl = document.getElementById("glcanvas").getContext("webgl");
+
+      function loadShader(type, source) {
+        const shader = gl.createShader(type);
+        gl.shaderSource(shader, source);
+        gl.compileShader(shader);
+        return shader;
+      }
+
+      const fragSource = `
+        void main(void) {
+          gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
+        }
+      `;
+
+      let then = 0;
+      function step(now) {
+        deltaTime = now - then;
+        then = now;
+
+        gl.clearColor(0.0, 0.0, 0.0, 1.0);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        requestAnimationFrame(step);
+      }
+      requestAnimationFrame(step);
+    </script>
+  </body>
+</html>
