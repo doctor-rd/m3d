@@ -38,6 +38,31 @@
         }
       `;
 
+      let n_vert = 0;
+      let vertex_buffer_x, vertex_buffer_y;
+
+      function setradius(r) {
+        let vertices = [];
+        n_vert = 0;
+
+        for (let y=-r; y<=r; y+=r/20) {
+          vertices.push(0);
+          vertices.push(y);
+          n_vert++;
+        }
+
+        vertex_buffer_y = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, vertex_buffer_y);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+
+        vertices.shift();
+        vertices.push(0);
+
+        vertex_buffer_x = gl.createBuffer ();
+        gl.bindBuffer(gl.ARRAY_BUFFER, vertex_buffer_x);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+      }
+
       function setfunc(str) {
         const vertSource = vertTmp.replace('0.0', str);
       }
