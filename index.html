@@ -19,6 +19,7 @@
       const vertTmp = `
         attribute vec2 position;
         uniform float time;
+        uniform vec2 move;
         uniform mat4 Pmatrix;
         uniform mat4 Vmatrix;
         uniform mat4 Mmatrix;
@@ -26,6 +27,7 @@
           return 0.0;
         }
         void main(void) {
+          vec2 position = position + move;
           gl_Position = Pmatrix*Vmatrix*Mmatrix*vec4(position.x, func(position, time), position.y, 1.0);
         }
       `;
