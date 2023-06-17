@@ -22,6 +22,37 @@
         }
       `;
 
+      let drag = false;
+      let old_x, old_y;
+      let THETA = 0;
+      let PHI = 0;
+
+      function mouseDown(e) {
+        drag = true;
+        old_x = e.pageX;
+        old_y = e.pageY;
+        return false;
+      }
+
+      function mouseUp(e) {
+        drag = false;
+      }
+
+      function mouseMove(e) {
+        if (!drag) return false;
+        THETA += (e.pageX-old_x)*2*Math.PI/gl.canvas.width;
+        PHI += (e.pageY-old_y)*2*Math.PI/gl.canvas.height;
+        if (PHI<-.8) PHI=-.8;
+        if (PHI>.8) PHI=.8;
+        old_x = e.pageX;
+        old_y = e.pageY;
+      }
+
+      gl.canvas.addEventListener("mousedown", mouseDown, false);
+      gl.canvas.addEventListener("mouseup", mouseUp, false);
+      gl.canvas.addEventListener("mouseout", mouseUp, false);
+      gl.canvas.addEventListener("mousemove", mouseMove, false);
+
       let then = 0;
       function step(now) {
         deltaTime = now - then;
