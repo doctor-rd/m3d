@@ -16,11 +16,29 @@
         return shader;
       }
 
+      const vertTmp = `
+        attribute vec2 position;
+        uniform float time;
+        uniform mat4 Pmatrix;
+        uniform mat4 Vmatrix;
+        uniform mat4 Mmatrix;
+        float func(vec2 p, float t) {
+          return 0.0;
+        }
+        void main(void) {
+          gl_Position = Pmatrix*Vmatrix*Mmatrix*vec4(position.x, func(position, time), position.y, 1.0);
+        }
+      `;
+
       const fragSource = `
         void main(void) {
           gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
         }
       `;
+
+      function setfunc(str) {
+        const vertSource = vertTmp.replace('0.0', str);
+      }
 
       let drag = false;
       let old_x, old_y;
