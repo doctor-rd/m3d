@@ -63,8 +63,21 @@
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
       }
 
+      const fragShader = loadShader(gl.FRAGMENT_SHADER, fragSource);
+      let shaderprogram, _time, _move, _Pmatrix, _Vmatrix, _Mmatrix;
+
       function setfunc(str) {
         const vertSource = vertTmp.replace('0.0', str);
+        const vertShader = loadShader(gl.VERTEX_SHADER, vertSource);
+        shaderprogram = gl.createProgram();
+        gl.attachShader(shaderprogram, vertShader);
+        gl.attachShader(shaderprogram, fragShader);
+        gl.linkProgram(shaderprogram);
+        _time = gl.getUniformLocation(shaderprogram, "time");
+        _move = gl.getUniformLocation(shaderprogram, "move");
+        _Pmatrix = gl.getUniformLocation(shaderprogram, "Pmatrix");
+        _Vmatrix = gl.getUniformLocation(shaderprogram, "Vmatrix");
+        _Mmatrix = gl.getUniformLocation(shaderprogram, "Mmatrix");
       }
 
       let drag = false;
