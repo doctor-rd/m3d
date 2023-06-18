@@ -3,6 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <title>m3d</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gl-matrix/3.4.2/gl-matrix-min.js"></script>
   </head>
   <body>
     <canvas id="glcanvas" width="600" height="600"></canvas>
@@ -39,11 +40,13 @@
       `;
 
       let n_vert = 0;
+      let radius = 0;
       let vertex_buffer_x, vertex_buffer_y;
 
       function setradius(r) {
         let vertices = [];
         n_vert = 0;
+        radius = r;
 
         for (let y=-r; y<=r; y+=r/20) {
           vertices.push(0);
@@ -80,10 +83,16 @@
         _Mmatrix = gl.getUniformLocation(shaderprogram, "Mmatrix");
       }
 
+      let proj_matrix = glMatrix.mat4.create();
+      let mo_matrix = glMatrix.mat4.create();
+      let view_matrix = glMatrix.mat4.create();
+      glMatrix.mat4.perspective(proj_matrix, 1.1, 1, 1, 100);
+      glMatrix.mat4.fromTranslation(view_matrix, glMatrix.vec4.fromValues(0, 0, -6));
+
       let drag = false;
       let old_x, old_y;
-      let THETA = 0;
-      let PHI = 0;
+      let THETA = 0.5;
+      let PHI = 0.3;
 
       function mouseDown(e) {
         drag = true;
@@ -111,13 +120,41 @@
       gl.canvas.addEventListener("mouseout", mouseUp, false);
       gl.canvas.addEventListener("mousemove", mouseMove, false);
 
+      setradius(3);
+      setfunc('sin(3.*length(p)+t)*pow(.8, pow(length(p), 2.))');
+
       let then = 0;
       function step(now) {
         deltaTime = now - then;
         then = now;
 
+        glMatrix.mat4.fromXRotation(mo_matrix, PHI);
+        glMatrix.mat4.rotateY(mo_matrix, mo_matrix, THETA);
+
         gl.clearColor(0.0, 0.0, 0.0, 1.0);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        gl.useProgram(shaderprogram);
+        gl.uniform1fv(_time, [now/1000]);
+        gl.uniformMatrix4fv(_Pmatrix, false, proj_matrix);
+        gl.uniformMatrix4fv(_Vmatrix, false, view_matrix);
+        gl.uniformMatrix4fv(_Mmatrix, false, mo_matrix);
+        const _position = gl.getAttribLocation(shaderprogram, "position");
+        gl.enableVertexAttribArray(_position);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, vertex_buffer_x);
+        gl.vertexAttribPointer(_position, 2, gl.FLOAT, false, 0, 0);
+        for (let y=-radius; y<=radius+.1; y+=.1) {
+          gl.uniform2fv(_move, [0, y]);
+          gl.drawArrays(gl.LINE_STRIP, 0, n_vert);
+        }
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, vertex_buffer_y);
+        gl.vertexAttribPointer(_position, 2, gl.FLOAT, false, 0, 0);
+        for (let x=-radius; x<=radius+.1; x+=.1) {
+          gl.uniform2fv(_move, [x, 0]);
+          gl.drawArrays(gl.LINE_STRIP, 0, n_vert);
+        }
+
         requestAnimationFrame(step);
       }
       requestAnimationFrame(step);
