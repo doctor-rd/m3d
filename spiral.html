@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <title>m3d</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gl-matrix/3.4.2/gl-matrix-min.js"></script>
+  </head>
+  <body>
+    <canvas id="glcanvas" width="600" height="600"></canvas>
+    <script>
+      const gl = document.getElementById("glcanvas").getContext("webgl");
+
+      function loadShader(type, source) {
+        const shader = gl.createShader(type);
+        gl.shaderSource(shader, source);
+        gl.compileShader(shader);
+        return shader;
+      }
+
+      const vertTmp = `
+        attribute float ang;
+        uniform float time;
+        uniform mat4 Pmatrix;
+        uniform mat4 Vmatrix;
+        uniform mat4 Mmatrix;
+        float func(vec2 p, float a, float t) {
+          return 0.0;
+        }
+        void main(void) {
+          vec2 position = ang*.01*vec2(cos(ang), sin(ang));
+          gl_Position = Pmatrix*Vmatrix*Mmatrix*vec4(position.x, func(position, ang, time), position.y, 1.0);
+        }
+      `;
+
+      const fragSource = `
+        void main(void) {
+          gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
+        }
+      `;
+
+      function createSpiral(radius) {
+        let vertices = [];
+
+        let ang=0;
+        while (ang*.01<radius) {
+          vertices.push(ang);
+          let d=.5;
+          if (ang>20) d=10/ang;
+          ang+=d;
+        }
+        return new Float32Array(vertices);
+      }
+
+      let spiral, spiral_buffer;
+
+      function setradius(r) {
+        spiral = createSpiral(r);
+        spiral_buffer = gl.createBuffer ();
+        gl.bindBuffer(gl.ARRAY_BUFFER, spiral_buffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(spiral), gl.STATIC_DRAW);
+      }
+
+      const fragShader = loadShader(gl.FRAGMENT_SHADER, fragSource);
+      let shaderprogram, _time, _Pmatrix, _Vmatrix, _Mmatrix;
+
+      function setfunc(str) {
+        const vertSource = vertTmp.replace('0.0', str);
+        const vertShader = loadShader(gl.VERTEX_SHADER, vertSource);
+        shaderprogram = gl.createProgram();
+        gl.attachShader(shaderprogram, vertShader);
+        gl.attachShader(shaderprogram, fragShader);
+        gl.linkProgram(shaderprogram);
+        _time = gl.getUniformLocation(shaderprogram, "time");
+        _Pmatrix = gl.getUniformLocation(shaderprogram, "Pmatrix");
+        _Vmatrix = gl.getUniformLocation(shaderprogram, "Vmatrix");
+        _Mmatrix = gl.getUniformLocation(shaderprogram, "Mmatrix");
+      }
+
+      let proj_matrix = glMatrix.mat4.create();
+      let mo_matrix = glMatrix.mat4.create();
+      let view_matrix = glMatrix.mat4.create();
+      glMatrix.mat4.perspective(proj_matrix, 1.1, 1, 1, 100);
+      glMatrix.mat4.fromTranslation(view_matrix, glMatrix.vec4.fromValues(0, 0, -6));
+
+      let drag = false;
+      let old_x, old_y;
+      let THETA = 0.5;
+      let PHI = 0.3;
+
+      function mouseDown(e) {
+        drag = true;
+        old_x = e.pageX;
+        old_y = e.pageY;
+        return false;
+      }
+
+      function mouseUp(e) {
+        drag = false;
+      }
+
+      function mouseMove(e) {
+        if (!drag) return false;
+        THETA += (e.pageX-old_x)*2*Math.PI/gl.canvas.width;
+        PHI += (e.pageY-old_y)*2*Math.PI/gl.canvas.height;
+        if (PHI<-.8) PHI=-.8;
+        if (PHI>.8) PHI=.8;
+        old_x = e.pageX;
+        old_y = e.pageY;
+      }
+
+      gl.canvas.addEventListener("mousedown", mouseDown, false);
+      gl.canvas.addEventListener("mouseup", mouseUp, false);
+      gl.canvas.addEventListener("mouseout", mouseUp, false);
+      gl.canvas.addEventListener("mousemove", mouseMove, false);
+
+      setradius(3.5);
+      setfunc('sin(3.*length(p)+t)*pow(.8, pow(length(p), 2.))');
+
+      let then = 0;
+      function step(now) {
+        deltaTime = now - then;
+        then = now;
+
+        glMatrix.mat4.fromXRotation(mo_matrix, PHI);
+        glMatrix.mat4.rotateY(mo_matrix, mo_matrix, THETA);
+
+        gl.clearColor(0.0, 0.0, 0.0, 1.0);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        gl.useProgram(shaderprogram);
+        gl.uniform1fv(_time, [now/1000]);
+        gl.uniformMatrix4fv(_Pmatrix, false, proj_matrix);
+        gl.uniformMatrix4fv(_Vmatrix, false, view_matrix);
+        gl.uniformMatrix4fv(_Mmatrix, false, mo_matrix);
+        const _ang = gl.getAttribLocation(shaderprogram, "ang");
+        gl.enableVertexAttribArray(_ang);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, spiral_buffer);
+        gl.vertexAttribPointer(_ang, 1, gl.FLOAT, false, 0, 0);
+        gl.drawArrays(gl.LINE_STRIP, 0, spiral.length);
+
+        requestAnimationFrame(step);
+      }
+      requestAnimationFrame(step);
+    </script>
+  </body>
+</html>
