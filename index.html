@@ -4,10 +4,18 @@
     <meta charset="utf-8" />
     <title>m3d</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gl-matrix/3.4.2/gl-matrix-min.js"></script>
+    <script type="importmap">
+      {
+        "imports": {
+          "formeli": "https://doctor-rd.github.io/formeli.js/formeli.js"
+        }
+      }
+    </script>
   </head>
   <body>
     <canvas id="glcanvas" width="600" height="600"></canvas>
-    <script>
+    <script type="module">
+      import glslfunc from './glslfunc.js';
       const gl = document.getElementById("glcanvas").getContext("webgl");
 
       function loadShader(type, source) {
@@ -70,7 +78,7 @@
       let shaderprogram, _time, _move, _Pmatrix, _Vmatrix, _Mmatrix;
 
       function setfunc(str) {
-        const vertSource = vertTmp.replace('0.0', str);
+        const vertSource = vertTmp.replace('0.0', glslfunc(str));
         const vertShader = loadShader(gl.VERTEX_SHADER, vertSource);
         shaderprogram = gl.createProgram();
         gl.attachShader(shaderprogram, vertShader);
@@ -121,7 +129,7 @@
       gl.canvas.addEventListener("mousemove", mouseMove, false);
 
       setradius(3);
-      setfunc('sin(3.*length(p)+t)*pow(.8, pow(length(p), 2.))');
+      setfunc("sin(3sqrt(x^2+y^2)+t)*0.8^(x^2+y^2)");
 
       let then = 0;
       function step(now) {
