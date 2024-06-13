@@ -118,7 +118,7 @@
 
       let then = 0;
       function step(now) {
-        deltaTime = now - then;
+        const deltaTime = now - then;
         then = now;
 
         glMatrix.mat4.fromXRotation(mo_matrix, PHI);
