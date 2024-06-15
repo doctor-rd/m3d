@@ -4,6 +4,7 @@
     <meta charset="utf-8" />
     <title>m3d</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gl-matrix/3.4.2/gl-matrix-min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.9/dat.gui.min.js"></script>
     <script type="importmap">
       {
         "imports": {
@@ -129,7 +130,13 @@
       gl.canvas.addEventListener("mousemove", mouseMove, false);
 
       setradius(3);
-      setfunc("sin(3sqrt(x^2+y^2)+t)*0.8^(x^2+y^2)");
+      let ctrl = {
+        function: "sin(3sqrt(x^2+y^2)+t)*0.8^(x^2+y^2)",
+      };
+      setfunc(ctrl.function);
+      const gui = new dat.GUI({width: gl.canvas.width, autoPlace: false});
+      gui.add(ctrl, "function").onFinishChange(setfunc);
+      document.body.append(gui.domElement);
 
       let then = 0;
       function step(now) {
