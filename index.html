@@ -33,54 +33,82 @@
         uniform mat4 Pmatrix;
         uniform mat4 Vmatrix;
         uniform mat4 Mmatrix;
+        varying vec2 P;
+        varying float T;
         float func(vec2 p, float t) {
           return 0.0;
         }
         void main(void) {
-          vec2 position = position + move;
-          gl_Position = Pmatrix*Vmatrix*Mmatrix*vec4(position.x, func(position, time), position.y, 1.0);
+          P = position + move;
+          T = time;
+          gl_Position = Pmatrix*Vmatrix*Mmatrix*vec4(P.x, func(P, T), P.y, 1.0);
         }
       `;
 
-      const fragSource = `
+      const fragTmp = `
+        varying highp vec2 P;
+        varying highp float T;
+        highp float func(highp vec2 p, highp float t) {
+          return 0.0;
+        }
         void main(void) {
-          gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
+          highp vec2 d = .1*vec2(cos(T*.5), sin(T*.5));
+          lowp float checker = mod(floor(P.x*2.) + mod(floor(P.y*2.), 2.), 2.);
+          lowp float bright = checker*.5+.25 + .4*(func(P+d, T)-func(P-d, T))/.2;
+          gl_FragColor = vec4(bright, bright, bright, 1.0);
         }
       `;
 
-      let n_vert = 0;
-      let radius = 0;
-      let vertex_buffer_x, vertex_buffer_y;
+      let draw;
 
-      function setradius(r) {
+      function setdim(xmin, xmax, ymin, ymax) {
         let vertices = [];
-        n_vert = 0;
-        radius = r;
+        let n_vert = 0;
+        const stepx = (xmax-xmin)/100;
+        const stepy = (ymax-ymin)/100;
 
-        for (let y=-r; y<=r; y+=r/20) {
+        for (let x=xmin; x<=xmax; x+=stepx) {
+          vertices.push(x);
           vertices.push(0);
-          vertices.push(y);
-          n_vert++;
+          vertices.push(x);
+          vertices.push(stepy);
+          n_vert+=2;
         }
 
-        vertex_buffer_y = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, vertex_buffer_y);
+        let vertex_buffer = gl.createBuffer ();
+        gl.bindBuffer(gl.ARRAY_BUFFER, vertex_buffer);
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
 
-        vertices.shift();
-        vertices.push(0);
+        draw = function(time) {
+          gl.clearColor(0.0, 0.0, 0.0, 1.0);
+          gl.enable(gl.DEPTH_TEST);
+          gl.depthFunc(gl.LEQUAL);
+          gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+          gl.useProgram(shaderprogram);
+          gl.uniform1fv(_time, [time]);
+          gl.uniformMatrix4fv(_Pmatrix, false, proj_matrix);
+          gl.uniformMatrix4fv(_Vmatrix, false, view_matrix);
+          gl.uniformMatrix4fv(_Mmatrix, false, mo_matrix);
+          const _position = gl.getAttribLocation(shaderprogram, "position");
+          gl.enableVertexAttribArray(_position);
 
-        vertex_buffer_x = gl.createBuffer ();
-        gl.bindBuffer(gl.ARRAY_BUFFER, vertex_buffer_x);
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+          gl.bindBuffer(gl.ARRAY_BUFFER, vertex_buffer);
+          gl.vertexAttribPointer(_position, 2, gl.FLOAT, false, 0, 0);
+          for (let y=ymin; y<=ymax; y+=stepy) {
+            gl.uniform2fv(_move, [0, y]);
+            gl.drawArrays(gl.TRIANGLE_STRIP, 0, n_vert);
+          }
+        };
       }
 
-      const fragShader = loadShader(gl.FRAGMENT_SHADER, fragSource);
       let shaderprogram, _time, _move, _Pmatrix, _Vmatrix, _Mmatrix;
 
       function setfunc(str) {
-        const vertSource = vertTmp.replace('0.0', glslfunc(str));
+        const funcSource = glslfunc(str);
+        const vertSource = vertTmp.replace('0.0', funcSource);
         const vertShader = loadShader(gl.VERTEX_SHADER, vertSource);
+        const fragSource = fragTmp.replace('0.0', funcSource);
+        const fragShader = loadShader(gl.FRAGMENT_SHADER, fragSource);
         shaderprogram = gl.createProgram();
         gl.attachShader(shaderprogram, vertShader);
         gl.attachShader(shaderprogram, fragShader);
@@ -101,7 +129,7 @@
       let drag = false;
       let old_x, old_y;
       let THETA = 0.5;
-      let PHI = 0.3;
+      let PHI = 0.5;
 
       function mouseDown(e) {
         drag = true;
@@ -129,13 +157,24 @@
       gl.canvas.addEventListener("mouseout", mouseUp, false);
       gl.canvas.addEventListener("mousemove", mouseMove, false);
 
-      setradius(3);
       let ctrl = {
         function: "sin(3sqrt(x^2+y^2)+t)*0.8^(x^2+y^2)",
+        xmin: -3,
+        xmax: 3,
+        ymin: -3,
+        ymax: 3,
       };
+      function dimChange() {
+        setdim(ctrl.xmin, ctrl.xmax, ctrl.ymin, ctrl.ymax);
+      }
+      dimChange();
       setfunc(ctrl.function);
       const gui = new dat.GUI({width: gl.canvas.width, autoPlace: false});
       gui.add(ctrl, "function").onFinishChange(setfunc);
+      gui.add(ctrl, "xmin").onFinishChange(dimChange);
+      gui.add(ctrl, "xmax").onFinishChange(dimChange);
+      gui.add(ctrl, "ymin").onFinishChange(dimChange);
+      gui.add(ctrl, "ymax").onFinishChange(dimChange);
       document.body.append(gui.domElement);
 
       let then = 0;
@@ -146,29 +185,7 @@
         glMatrix.mat4.fromXRotation(mo_matrix, PHI);
         glMatrix.mat4.rotateY(mo_matrix, mo_matrix, THETA);
 
-        gl.clearColor(0.0, 0.0, 0.0, 1.0);
-        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-        gl.useProgram(shaderprogram);
-        gl.uniform1fv(_time, [now/1000]);
-        gl.uniformMatrix4fv(_Pmatrix, false, proj_matrix);
-        gl.uniformMatrix4fv(_Vmatrix, false, view_matrix);
-        gl.uniformMatrix4fv(_Mmatrix, false, mo_matrix);
-        const _position = gl.getAttribLocation(shaderprogram, "position");
-        gl.enableVertexAttribArray(_position);
-
-        gl.bindBuffer(gl.ARRAY_BUFFER, vertex_buffer_x);
-        gl.vertexAttribPointer(_position, 2, gl.FLOAT, false, 0, 0);
-        for (let y=-radius; y<=radius+.1; y+=.1) {
-          gl.uniform2fv(_move, [0, y]);
-          gl.drawArrays(gl.LINE_STRIP, 0, n_vert);
-        }
-
-        gl.bindBuffer(gl.ARRAY_BUFFER, vertex_buffer_y);
-        gl.vertexAttribPointer(_position, 2, gl.FLOAT, false, 0, 0);
-        for (let x=-radius; x<=radius+.1; x+=.1) {
-          gl.uniform2fv(_move, [x, 0]);
-          gl.drawArrays(gl.LINE_STRIP, 0, n_vert);
-        }
+        draw(now/1000);
 
         requestAnimationFrame(step);
       }
