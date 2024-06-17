@@ -58,7 +58,9 @@ function glsl(tree) {
             if (tree.value == "e")
                 return "" + Math.E;
             if (result.indexOf(".") < 0)
-                return result + ".";
+                result += ".";
+            if (result.startsWith("-"))
+                return "(" + result + ")";
             break;
     }
     return result;
