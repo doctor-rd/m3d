@@ -16,7 +16,7 @@ function glsl(tree) {
                 result += ")";
             break;
         case "sub":
-            return glsl(tree.lhs) + "-" + glsl(tree.rhs);
+            return "(" + glsl(tree.lhs) + "-" + glsl(tree.rhs) + ")";
         case "mul":
             result = "1.";
             for (let i=0; i<tree.muls.length; i++) {
@@ -30,7 +30,7 @@ function glsl(tree) {
                 result += ")";
             break;
         case "div":
-            return glsl(tree.lhs) + "/" + glsl(tree.rhs);
+            return "(" + glsl(tree.lhs) + "/" + glsl(tree.rhs) + ")";
         case "pow":
             return "pow(" + glsl(tree.lhs) + "," + glsl(tree.rhs) + ")";
         case "fct":
