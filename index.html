@@ -9,15 +9,21 @@
       {
         "imports": {
           "formeli": "https://doctor-rd.github.io/formeli.js/formeli.js"
+          ,"mathml": "https://doctor-rd.github.io/formeli.js/mathml.js"
         }
       }
     </script>
   </head>
   <body>
+    <math xmlns="http://www.w3.org/1998/Math/MathML" id="funcout"></math>
+    <br/>
     <canvas id="glcanvas" width="600" height="600"></canvas>
     <script type="module">
+      import {parse} from 'formeli'
+      import {mathml} from 'mathml';
       import glslfunc from './glslfunc.js';
       const gl = document.getElementById("glcanvas").getContext("webgl");
+      const funcout = document.getElementById("funcout");
 
       function loadShader(type, source) {
         const shader = gl.createShader(type);
@@ -104,7 +110,9 @@
       let shaderprogram, _time, _move, _Pmatrix, _Vmatrix, _Mmatrix;
 
       function setfunc(str) {
-        const funcSource = glslfunc(str);
+        const tree = parse(str);
+        const funcSource = glslfunc(tree);
+        funcout.innerHTML = "<mo>f(x,y)=</mo>" + mathml(tree);
         const vertSource = vertTmp.replace('0.0', funcSource);
         const vertShader = loadShader(gl.VERTEX_SHADER, vertSource);
         const fragSource = fragTmp.replace('0.0', funcSource);

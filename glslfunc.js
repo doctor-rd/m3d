@@ -1,5 +1,3 @@
-import {parse} from 'formeli'
-
 function glsl(tree) {
     let result;
     switch (tree.type) {
@@ -66,7 +64,4 @@ function glsl(tree) {
     return result;
 }
 
-export default function glslfunc(expr) {
-    const tree = parse(expr);
-    return glsl(tree);
-}
+export default glsl;
