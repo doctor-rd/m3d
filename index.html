@@ -112,7 +112,7 @@
       function setfunc(str) {
         const tree = parse(str);
         const funcSource = glslfunc(tree);
-        funcout.innerHTML = "<mo>f(x,y)=</mo>" + mathml(tree);
+        funcout.innerHTML = "<mi>f(x,y,t)</mi><mo>=</mo>" + mathml(tree);
         const vertSource = vertTmp.replace('0.0', funcSource);
         const vertShader = loadShader(gl.VERTEX_SHADER, vertSource);
         const fragSource = fragTmp.replace('0.0', funcSource);
