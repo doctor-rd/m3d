@@ -4,11 +4,26 @@
     <meta charset="utf-8" />
     <title>m3d</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gl-matrix/3.4.2/gl-matrix-min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.9/dat.gui.min.js"></script>
+    <script type="importmap">
+      {
+        "imports": {
+          "formeli": "https://doctor-rd.github.io/formeli.js/formeli.js"
+          ,"mathml": "https://doctor-rd.github.io/formeli.js/mathml.js"
+        }
+      }
+    </script>
   </head>
   <body>
+    <math xmlns="http://www.w3.org/1998/Math/MathML" id="funcout"></math>
+    <br/>
     <canvas id="glcanvas" width="600" height="600"></canvas>
-    <script>
+    <script type="module">
+      import {parse} from 'formeli'
+      import {mathml} from 'mathml';
+      import glslfunc from './glslfunc.js';
       const gl = document.getElementById("glcanvas").getContext("webgl");
+      const funcout = document.getElementById("funcout");
 
       function loadShader(type, source) {
         const shader = gl.createShader(type);
@@ -64,7 +79,10 @@
       let shaderprogram, _time, _Pmatrix, _Vmatrix, _Mmatrix;
 
       function setfunc(str) {
-        const vertSource = vertTmp.replace('0.0', str);
+        const tree = parse(str);
+        const funcSource = glslfunc(tree);
+        funcout.innerHTML = "<mi>f(x,y,t)</mi><mo>=</mo>" + mathml(tree);
+        const vertSource = vertTmp.replace('0.0', funcSource);
         const vertShader = loadShader(gl.VERTEX_SHADER, vertSource);
         shaderprogram = gl.createProgram();
         gl.attachShader(shaderprogram, vertShader);
@@ -114,7 +132,13 @@
       gl.canvas.addEventListener("mousemove", mouseMove, false);
 
       setradius(3.5);
-      setfunc('sin(3.*length(p)+t)*pow(.8, pow(length(p), 2.))');
+      let ctrl = {
+        function: "sin(3sqrt(x^2+y^2)+t)*0.8^(x^2+y^2)",
+      };
+      setfunc(ctrl.function);
+      const gui = new dat.GUI({width: gl.canvas.width, autoPlace: false});
+      gui.add(ctrl, "function").onFinishChange(setfunc);
+      document.body.append(gui.domElement);
 
       let then = 0;
       function step(now) {
