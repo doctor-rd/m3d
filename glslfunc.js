@@ -38,6 +38,16 @@ function glsl(tree) {
                     fname = "log";
                     break;
             }
+            if (tree.par.type=="tuple") {
+                result = "";
+                const last = tree.par.comps.length-1;
+                for (let i=0; i<last; i++)
+                    result += fname + "(" + glsl(tree.par.comps[i]) + ",";
+                result += glsl(tree.par.comps[last]);
+                for (let i=0; i<last; i++)
+                    result += ")";
+                return result;
+            }
             return fname + "(" + glsl(tree.par) + ")";
         case "var":
             switch (tree.name) {
