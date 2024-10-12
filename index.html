@@ -131,13 +131,13 @@
       let proj_matrix = glMatrix.mat4.create();
       let mo_matrix = glMatrix.mat4.create();
       let view_matrix = glMatrix.mat4.create();
-      glMatrix.mat4.perspective(proj_matrix, 1.1, 1, 1, 100);
       glMatrix.mat4.fromTranslation(view_matrix, glMatrix.vec4.fromValues(0, 0, -6));
 
       let drag = false;
       let old_x, old_y;
       let THETA = 0.5;
       let PHI = 0.5;
+      let fov = 1.1;
 
       function mouseDown(e) {
         drag = true;
@@ -160,10 +160,17 @@
         old_y = e.pageY;
       }
 
+      function zoom(e) {
+        fov += e.deltaY/1000;
+        if (fov<.1) fov=.1;
+        if (fov>3) fov=3;
+      }
+
       gl.canvas.addEventListener("mousedown", mouseDown, false);
       gl.canvas.addEventListener("mouseup", mouseUp, false);
       gl.canvas.addEventListener("mouseout", mouseUp, false);
       gl.canvas.addEventListener("mousemove", mouseMove, false);
+      gl.canvas.addEventListener("wheel", zoom, false);
 
       let ctrl = {
         function: "sin(3sqrt(x^2+y^2)+t)*0.8^(x^2+y^2)",
@@ -192,6 +199,8 @@
 
         glMatrix.mat4.fromXRotation(mo_matrix, PHI);
         glMatrix.mat4.rotateY(mo_matrix, mo_matrix, THETA);
+
+        glMatrix.mat4.perspective(proj_matrix, fov, gl.canvas.width/gl.canvas.height, 1, 100);
 
         draw(now/1000);
 
